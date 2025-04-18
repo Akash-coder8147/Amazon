@@ -34,10 +34,11 @@ pipeline {
         stage('Run Docker Container') {
             steps {
                 sh '''
-                docker rm -f amazon-container || true
-                docker run -d --name amazon-container -p 8900:8080 ${DOCKER_IMAGE}
+                    docker rm -f amazon-container || true
+                    docker run -d --name amazon-container -p 8900:8080 ${DOCKER_IMAGE}
                 '''
             }
-        }
-    }
+        }
+    }
 }
+

@@ -3,6 +3,8 @@ pipeline {
 
     environment {
         DOCKER_IMAGE = 'amazon-app'
+        ACR_NAME = 'akash8147.azurecr.io'
+        ACR_IMAGE = "${ACR_NAME}/${DOCKER_IMAGE}:latest"
     }
 
     stages {
@@ -20,7 +22,6 @@ pipeline {
 
         stage('Copy WAR') {
             steps {
-                // Adjust WAR path if it's different
                 sh 'cp Amazon/Amazon-Web/target/Amazon.war Amazon.war'
             }
         }
@@ -31,11 +32,34 @@ pipeline {
             }
         }
 
-        stage('Run Docker Container') {
+        stage('Tag Image for ACR') {
+            steps {
+                sh 'docker tag ${DOCKER_IMAGE} ${ACR_IMAGE}'
+            }
+        }
+
+        stage('Login to ACR') {
+            steps {
+                withCredentials([usernamePassword(credentialsId: 'acr-credentials', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]) {
+                    sh 'echo $PASSWORD | docker login ${ACR_NAME} -u $USERNAME --password-stdin'
+                }
+            }
+        }
+
+        stage('Push to ACR') {
+            steps {
+                sh 'docker push ${ACR_IMAGE}'
+            }
+        }
+
+        stage('Run Docker Container (Optional)') {
             steps {
                 sh '''
                     docker rm -f amazon-container || true
-                    docker run -d --name amazon-container -p 8900:8080 ${DOCKER_IMAGE}
+                    docker volume create amazon-tomcat-logs || true
+                    docker run -d --name amazon-container -p 8900:8080 \
+                        -v amazon-tomcat-logs:/usr/local/tomcat/logs \
+                        ${ACR_IMAGE}
                 '''
             }
         }

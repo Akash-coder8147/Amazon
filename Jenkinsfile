@@ -8,7 +8,7 @@ pipeline {
     stages {
         stage('Checkout') {
             steps {
-                git credentialsId: 'your-git-creds-id', url: 'https://github.com/dev-anupsa/Amazon.git'
+                git credentialsId: 'your-git-creds-id', url: 'https://github.com/Akash-coder8147/Amazon.git'
             }
         }
 

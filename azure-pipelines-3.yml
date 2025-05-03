@@ -1,0 +1,29 @@
+trigger:
+- main
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+
+variables:
+  storageAccountName: akash8147
+  containerName: newcontainer1
+  filePath: Folder1/file4.txt
+  destinationPath: file4.txt
+
+steps:
+- checkout: self 
+- task: AzureCLI@2
+  inputs:
+    azureSubscription: 'my-service-connection'
+    scriptType: 'bash'
+    scriptLocation: 'inlineScript'
+    inlineScript: |
+      echo "Uploading file to Azure Storage..."
+      az storage blob upload \
+        --account-name $(storageAccountName) \
+        --container-name $(containerName) \
+        --file $(filePath) \
+        --name $(destinationPath) \
+        --auth-mode key
+        

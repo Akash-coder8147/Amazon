@@ -1,0 +1,29 @@
+trigger: none
+
+pool:
+  name: Default
+
+variables:
+  - group: group-abc   # This group now has non-secret SourcePath, TargetPath
+
+stages:
+- stage: main
+  displayName: 'dev'
+  jobs: 
+  - job: build
+    steps: 
+    - checkout: self
+      fetchDepth: 0
+
+    - task: CopyFiles@2   
+      displayName: 'Copy all repo contents'
+      inputs:
+        SourceFolder: '$(SourcePath)'
+        Contents: '**'
+        TargetFolder: '$(TargetPath)'
+
+    - task: PublishBuildArtifacts@1  
+      displayName: 'Publishing all contents as artifact'
+      inputs:
+        PathtoPublish: '$(TargetPath)'
+        ArtifactName: 'drop'

@@ -1,0 +1,35 @@
+trigger:
+- main
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+variables:
+  artifactName: 'AmazonArtifact'
+
+stages:
+- stage: Build
+  jobs:
+  - job: BuildAndPublish
+    steps:
+    - checkout: self
+
+    - task: Maven@3
+      inputs:
+        mavenPomFile: 'Amazon/Amazon-Web/pom.xml'
+        goals: 'package'
+        options: '-DskipTests=true'
+        javaHomeOption: 'JDKVersion'
+        jdkVersionOption: '1.11'
+
+    - task: CopyFiles@2
+      inputs:
+        SourceFolder: 'Amazon/Amazon-Web/target'
+        Contents: '**/*.war'
+        TargetFolder: '$(Build.ArtifactStagingDirectory)'
+
+    - task: PublishBuildArtifacts@1
+      inputs:
+        PathtoPublish: '$(Build.ArtifactStagingDirectory)'
+        ArtifactName: '$(artifactName)'
+        publishLocation: 'Container'

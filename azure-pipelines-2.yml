@@ -1,0 +1,12 @@
+trigger:
+- main
+
+variables:
+  envName: yaml-variable
+
+pool:
+  vmImage: ubuntu-latest
+
+steps:
+- script: |
+    echo "Environment Name is: $(envName)"

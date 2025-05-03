@@ -1,0 +1,61 @@
+trigger:
+- main  # Automatically trigger on pushes to the main branch
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+variables:
+  storageAccountName: 'akash8147'         # Replace with your Storage Account name
+  containerName: 'newcontainer1'          # Replace with your Container name
+  artifactName: 'drop'
+
+stages:
+- stage: Build
+  displayName: 'Build and Publish Artifact'
+  jobs:
+  - job: BuildAndPublish
+    displayName: 'Build and Publish Artifact Job'
+    steps:
+    - script: |
+        echo "Collecting required files..."
+        mkdir -p $(Build.ArtifactStagingDirectory)/package   # Create the staging directory if it doesn't exist
+        cp -r Folder1/* $(Build.ArtifactStagingDirectory)/package/  # Copy all files from myfolder
+        cp file4.txt $(Build.ArtifactStagingDirectory)/package/      # Copy file4.txt from root to package
+        echo "Collected files:"
+        ls -R $(Build.ArtifactStagingDirectory)/package             # List files in the staging directory to verify
+      displayName: 'Collect Required Files'
+      
+    - task: PublishPipelineArtifact@1
+      inputs:
+        targetPath: '$(Build.ArtifactStagingDirectory)/package'
+        artifact: '$(artifactName)'
+        publishLocation: 'pipeline'
+      displayName: 'Publish Artifact'
+
+- stage: Upload
+  displayName: 'Upload to Azure Blob Storage'
+  dependsOn: Build
+  jobs:
+  - job: UploadToBlob
+    displayName: 'Upload Artifact to Azure Blob Storage'
+    steps:
+    - task: DownloadPipelineArtifact@2
+      inputs:
+        artifactName: '$(artifactName)'
+        targetPath: '$(Pipeline.Workspace)/artifact'
+      displayName: 'Download Artifact'
+
+    - task: AzureCLI@2
+      inputs:
+        azureSubscription: 'my-service-connection'  # Replace with your Azure Service Connection name
+        scriptType: 'bash'
+        scriptLocation: 'inlineScript'
+        inlineScript: |
+          echo "Uploading files from artifact to Azure Blob Storage with overwrite enabled..."
+          az storage blob upload-batch \
+            --account-name $(storageAccountName) \
+            --destination $(containerName) \
+            --source "$(Pipeline.Workspace)/artifact" \
+            --account-key "$(storageKey)" \
+            --overwrite true  # Ensures blobs with the same name are overwritten
+      displayName: 'Upload All Files to Azure Blob Storage'

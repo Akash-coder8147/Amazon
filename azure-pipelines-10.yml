@@ -1,0 +1,44 @@
+trigger:
+- main
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+variables:
+  - group: group-abc  
+  - group: group-1
+
+  - name: packageName
+    value: 'repo-artifact'
+
+  - name: packageVersion
+    value: '1.0.0'
+
+stages:
+- stage: BuildAndUpload
+  displayName: 'Filter and Upload to Azure Artifacts Feed'
+  jobs:
+  - job: PackageJob
+    displayName: 'Prepare and Publish Files'
+    steps:
+    - checkout: self
+      fetchDepth: 0
+
+    - script: |
+        echo "Filtering out .yml files..."
+        mkdir -p $(Build.ArtifactStagingDirectory)/feed
+        find . -type f ! -name "*.yml" ! -path "./$(Build.ArtifactStagingDirectory)/*" -exec cp --parents {} $(Build.ArtifactStagingDirectory)/feed/ \;
+        echo "Files prepared for publishing:"
+        ls -R $(Build.ArtifactStagingDirectory)/feed
+      displayName: 'Filter and Copy Files to Package Directory'
+
+    - task: UniversalPackages@0
+      displayName: 'Publish to Azure Artifacts Feed'
+      inputs:
+        command: 'publish'
+        publishDirectory: '$(Build.ArtifactStagingDirectory)/feed'
+        feedsToUse: 'internal'
+        vstsFeed: 'Project-02/Devops-b1'   # ✅ Correct: project-scoped feed
+        packageName: '$(packageName)'
+        versionOption: 'custom'
+        version: '$(packageVersion)'

@@ -1,0 +1,31 @@
+trigger: none
+
+pool:
+  name: Default
+
+variables:
+  SourcePath: $(Build.SourcesDirectory)
+  TargetPath: $(Build.ArtifactStagingDirectory)
+
+stages:
+- stage: main
+  displayName: 'dev'
+  jobs: 
+  - job: build
+    steps: 
+    - checkout: self
+      fetchDepth: 0
+
+    - task: CopyFiles@2   
+      displayName: 'Copy file task'
+      inputs:
+        SourceFolder: '$(SourcePath)'   
+        TargetFolder: '$(TargetPath)'
+
+    - task: PublishBuildArtifacts@1  
+      displayName: 'Publishing artifact'
+      inputs:
+        PathtoPublish: '$(Build.ArtifactStagingDirectory)'
+        ArtifactName: 'drop'
+
+ 

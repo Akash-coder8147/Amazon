@@ -1,0 +1,64 @@
+trigger:
+- main
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+variables:
+  storageAccountName: 'akash8147'         # Your Storage Account
+  containerName: 'newcontainer1'          # Your Blob Container
+  artifactName: 'repo-artifact'
+
+stages:
+- stage: Build
+  displayName: 'Build and Publish Artifact'
+  jobs:
+  - job: BuildAndPublish
+    displayName: 'Collect and Publish Files'
+    steps:
+    - script: |
+        echo "Collecting all repo files..."
+        mkdir -p $(Build.ArtifactStagingDirectory)/package
+        cp -r * $(Build.ArtifactStagingDirectory)/package/
+        echo "Contents of package directory:"
+        ls -R $(Build.ArtifactStagingDirectory)/package
+      displayName: 'Copy All Files to Staging Directory'
+
+    - task: PublishPipelineArtifact@1
+      inputs:
+        targetPath: '$(Build.ArtifactStagingDirectory)/package'
+        artifact: '$(artifactName)'
+        publishLocation: 'pipeline'
+      displayName: 'Publish All Files as Artifact'
+
+- stage: Upload
+  displayName: 'Upload to Azure Blob'
+  dependsOn: Build
+  jobs:
+  - job: UploadToBlob
+    displayName: 'Upload to Blob Storage'
+    steps:
+    - task: DownloadPipelineArtifact@2
+      inputs:
+        artifactName: '$(artifactName)'
+        targetPath: '$(Pipeline.Workspace)/artifact'
+      displayName: 'Download Artifact'
+
+    - task: AzureCLI@2
+      inputs:
+        azureSubscription: 'my-service-connection'  # Replace with your Azure DevOps service connection name
+        scriptType: 'bash'
+        scriptLocation: 'inlineScript'
+        inlineScript: |
+          echo "Uploading files to blob storage..."
+          az storage blob upload-batch \
+            --account-name "$storageAccountName" \
+            --destination "$containerName" \
+            --source "$(Pipeline.Workspace)/artifact" \
+            --account-key "$storageKey" \
+            --overwrite true
+      env:
+        storageAccountName: $(storageAccountName)
+        containerName: $(containerName)
+        storageKey: $(storageKey)
+      displayName: 'Upload Files to Azure Blob Storage'

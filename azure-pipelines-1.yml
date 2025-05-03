@@ -1,0 +1,10 @@
+trigger:
+- main
+
+pool:
+  name: Self-hosted
+  demands:
+    - Agent.Name -equals agent2
+
+steps:
+- script: echo "Running on agent2 machine"
